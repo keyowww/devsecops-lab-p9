@@ -1,0 +1,23 @@
+﻿# Stage 1: Build dependencies
+FROM python:3.11-slim AS builder
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
+
+# Stage 2: Runtime image
+FROM python:3.11-slim-bookworm
+WORKDIR /app
+
+# Buat non-root user untuk keamanan
+RUN useradd -u 10001 appuser
+USER appuser
+
+# Salin dependencies dari stage builder
+COPY --from=builder /root/.local /home/appuser/.local
+COPY --from=builder /app /app
+COPY app.py .
+
+ENV PATH=/home/appuser/.local/bin:
+EXPOSE 5000
+
+CMD ["python", "app.py"]
